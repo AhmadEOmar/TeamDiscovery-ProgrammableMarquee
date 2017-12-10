@@ -41,7 +41,6 @@ namespace Vision
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(UIForm));
-            this.populateMarqueeButton = new System.Windows.Forms.Button();
             this.createASegmentGroupBox = new System.Windows.Forms.GroupBox();
             this.secondsPerCharacterLabel = new System.Windows.Forms.Label();
             this.displayDurationControl = new System.Windows.Forms.NumericUpDown();
@@ -92,15 +91,16 @@ namespace Vision
             this.pauseButton = new System.Windows.Forms.Button();
             this.playButton = new System.Windows.Forms.Button();
             this.animateSegmentTimer = new System.Windows.Forms.Timer(this.components);
-            this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
+            this.browseOpenFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.saveButton = new System.Windows.Forms.Button();
             this.goToFullScreenButton = new System.Windows.Forms.Button();
             this.loadXMLButton = new System.Windows.Forms.Button();
-            this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
+            this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
             this.buildLabel = new System.Windows.Forms.Label();
             this.SegmentHolderPanel = new System.Windows.Forms.Panel();
             this.aNewSegmentLabel = new System.Windows.Forms.Label();
             this.clickToMakeLabel = new System.Windows.Forms.Label();
+            this.xmlOpenFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.marquee1 = new Vision.Marquee();
             this.createASegmentGroupBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.displayDurationControl)).BeginInit();
@@ -115,18 +115,6 @@ namespace Vision
             ((System.ComponentModel.ISupportInitialize)(this.originalPictureBox)).BeginInit();
             this.SegmentHolderPanel.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // populateMarqueeButton
-            // 
-            this.populateMarqueeButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.populateMarqueeButton.Location = new System.Drawing.Point(197, 514);
-            this.populateMarqueeButton.Name = "populateMarqueeButton";
-            this.populateMarqueeButton.Size = new System.Drawing.Size(106, 37);
-            this.populateMarqueeButton.TabIndex = 1;
-            this.populateMarqueeButton.Text = "Populate Marquee";
-            this.populateMarqueeButton.UseVisualStyleBackColor = true;
-            this.populateMarqueeButton.Visible = false;
-            this.populateMarqueeButton.Click += new System.EventHandler(this.button1_Click_1);
             // 
             // createASegmentGroupBox
             // 
@@ -726,6 +714,8 @@ namespace Vision
             // 
             this.playButton.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.playButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.playButton.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("playButton.BackgroundImage")));
+            this.playButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.playButton.FlatAppearance.BorderColor = System.Drawing.Color.Black;
             this.playButton.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Silver;
             this.playButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -738,10 +728,9 @@ namespace Vision
             this.playButton.Visible = false;
             this.playButton.Click += new System.EventHandler(this.playButton_Click);
             // 
-            // openFileDialog1
+            // browseOpenFileDialog
             // 
-            this.openFileDialog1.FileName = "openFileDialog";
-            this.openFileDialog1.Filter = "Image Files(*.BMP;*.JPG;*.GIF;*.PNG;*.JPEG)|*.BMP;*.JPG;*.GIF;*.PNG;*.JPEG";
+            this.browseOpenFileDialog.Filter = "Image Files(*.BMP;*.JPG;*.GIF;*.PNG;*.JPEG)|*.BMP;*.JPG;*.GIF;*.PNG;*.JPEG";
             // 
             // saveButton
             // 
@@ -750,7 +739,7 @@ namespace Vision
             this.saveButton.FlatAppearance.BorderColor = System.Drawing.Color.Black;
             this.saveButton.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Blue;
             this.saveButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.saveButton.Location = new System.Drawing.Point(867, 514);
+            this.saveButton.Location = new System.Drawing.Point(866, 514);
             this.saveButton.Name = "saveButton";
             this.saveButton.Size = new System.Drawing.Size(75, 37);
             this.saveButton.TabIndex = 45;
@@ -781,21 +770,22 @@ namespace Vision
             this.loadXMLButton.FlatAppearance.BorderColor = System.Drawing.Color.Black;
             this.loadXMLButton.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(0)))));
             this.loadXMLButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.loadXMLButton.Location = new System.Drawing.Point(792, 514);
+            this.loadXMLButton.Location = new System.Drawing.Point(790, 514);
             this.loadXMLButton.Name = "loadXMLButton";
             this.loadXMLButton.Size = new System.Drawing.Size(75, 37);
             this.loadXMLButton.TabIndex = 48;
             this.loadXMLButton.Text = "Load XML";
             this.loadXMLButton.UseVisualStyleBackColor = false;
+            this.loadXMLButton.Click += new System.EventHandler(this.loadXMLButton_Click);
             // 
             // buildLabel
             // 
             this.buildLabel.AutoSize = true;
-            this.buildLabel.Location = new System.Drawing.Point(710, 538);
+            this.buildLabel.Location = new System.Drawing.Point(708, 538);
             this.buildLabel.Name = "buildLabel";
-            this.buildLabel.Size = new System.Drawing.Size(82, 13);
+            this.buildLabel.Size = new System.Drawing.Size(69, 13);
             this.buildLabel.TabIndex = 49;
-            this.buildLabel.Text = "Beta Build 0.1.1";
+            this.buildLabel.Text = "Version 1.0.0";
             // 
             // SegmentHolderPanel
             // 
@@ -855,7 +845,6 @@ namespace Vision
             this.Controls.Add(this.SegmentHolderPanel);
             this.Controls.Add(this.imageTabLabel);
             this.Controls.Add(this.textTabLabel);
-            this.Controls.Add(this.populateMarqueeButton);
             this.Controls.Add(this.exitButton);
             this.Controls.Add(this.playButton);
             this.Controls.Add(this.startNewMessageButton);
@@ -897,7 +886,6 @@ namespace Vision
         }
 
         #endregion
-        private System.Windows.Forms.Button populateMarqueeButton;
         private System.Windows.Forms.Button runButton;
         private Marquee marquee1;
         private System.Windows.Forms.Button exitButton;
@@ -940,7 +928,7 @@ namespace Vision
         private System.Windows.Forms.TextBox fileLocationTextBox;
         private System.Windows.Forms.Button startNewMessageButton;
         private System.Windows.Forms.Timer animateSegmentTimer;
-        private System.Windows.Forms.OpenFileDialog openFileDialog1;
+        private System.Windows.Forms.OpenFileDialog browseOpenFileDialog;
         private System.Windows.Forms.GroupBox scaledImageGroupBox;
         private System.Windows.Forms.PictureBox scaledPictureBox;
         private System.Windows.Forms.Button previewButton;
@@ -949,7 +937,7 @@ namespace Vision
         private System.Windows.Forms.Button goToFullScreenButton;
         private System.Windows.Forms.Label secondsPerCharacterLabel;
         private System.Windows.Forms.Button loadXMLButton;
-        private System.Windows.Forms.SaveFileDialog saveFileDialog1;
+        private System.Windows.Forms.SaveFileDialog saveFileDialog;
         private System.Windows.Forms.NumericUpDown displayDurationControl;
         private System.Windows.Forms.Label exitEffectLabel;
         private System.Windows.Forms.ComboBox exitEffectComboBox;
@@ -958,6 +946,7 @@ namespace Vision
         private System.Windows.Forms.Panel SegmentHolderPanel;
         private System.Windows.Forms.Label aNewSegmentLabel;
         private System.Windows.Forms.Label clickToMakeLabel;
+        private System.Windows.Forms.OpenFileDialog xmlOpenFileDialog;
     }
 }
 

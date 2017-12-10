@@ -49,8 +49,6 @@ namespace Vision
         private Button[] addSegmentButtons = new Button[24];
         private Point[] segmentLocationArray = new Point[24];
         private Point[] addSegmentLocationArray = new Point[24];
-        private Point a;
-        private Point b;
         private int moveFrom;
         private bool fullScreen = false;
         XmlSerializer xs;
@@ -139,6 +137,334 @@ namespace Vision
 
         }
 
+        /*
+         * 
+         *   Generic functions
+         * 
+         */
+        #region Generic Functions
+        //Sets the locations of objects to a parallel array
+        private void getLocations()
+        {
+            for (int i = 0; i < 24; i++)
+            {
+                if (i == 0)
+                {
+                    segmentLocationArray[i] = segmentPanels[i].Location;
+                }
+                else
+                {
+                    addSegmentLocationArray[i] = addSegmentButtons[i].Location;
+                    segmentLocationArray[i] = segmentPanels[i].Location;
+                }
+            }
+            setReferences();
+        }
+
+        private void clearForMarquee()
+        {
+            //If it starts from 0 it will continue to overwrite until no more segments are visible
+            for (int i = 0; i < 24; i++)
+            {
+                if (segmentPanels[i].Visible == true)
+                {
+                    lastSegmentVisable = i;
+                }
+            }
+            //Test which tab is active and then sets that tab to the front so the open menu is called the correct tab is displayed first
+            if (textPanel.Visible == true)
+            {
+                textPanel.BringToFront();
+            }
+            else
+            {
+                imagePanel.BringToFront();
+            }
+            SegmentHolderPanel.Visible = false;
+            startNewMessageButton.Visible = false;
+            loadXMLButton.Visible = false;
+            saveButton.Visible = false;
+            buildLabel.Visible = false;
+            textTabLabel.Visible = false;
+            imageTabLabel.Visible = false;
+            textPanel.Visible = false;
+            imagePanel.Visible = false;
+            marqueeBackgroundColorLabel.Visible = false;
+            marqueeBackgroundColorButton.Visible = false;
+            runButton.Visible = false;
+            marquee1.Top = (this.ClientSize.Height - marquee1.Height) / 2;
+        }
+
+
+        private void openMenu()
+        {
+            SegmentHolderPanel.Visible = true;
+            startNewMessageButton.Visible = true;
+            loadXMLButton.Visible = true;
+            saveButton.Visible = true;
+            textTabLabel.Visible = true;
+            imageTabLabel.Visible = true;
+            textPanel.Visible = true;
+            imagePanel.Visible = true;
+            marqueeBackgroundColorLabel.Visible = true;
+            marqueeBackgroundColorButton.Visible = true;
+            playButton.Visible = false;
+            pauseButton.Visible = false;
+            goToFullScreenButton.Visible = false;
+            marquee1.Visible = false;
+            this.BackColor = Color.FromArgb(255, 64, 64, 64);
+            runButton.Visible = true;
+            buildLabel.Visible = true;
+            resetSegments();
+            backToMenuButton.Visible = false;
+            this.MaximizeBox = false;
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.WindowState = FormWindowState.Normal;
+            this.Size = new System.Drawing.Size(1034, 592);
+        }
+        private bool mouseIsOverPanel(Panel pnl)
+        {
+            if (pnl.ClientRectangle.Contains(pnl.PointToClient(Cursor.Position)))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private bool mouseIsOverButton(Button btn)
+        {
+            if (btn.ClientRectangle.Contains(btn.PointToClient(Cursor.Position)))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private bool mouseIsOverLabel(Label label)
+        {
+            if (label.ClientRectangle.Contains(label.PointToClient(Cursor.Position)))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private void setReferences()
+        {
+            for (int i = 0; i < 24; i++)
+            {
+                for (int j = 0; j < 24; j++)
+                {
+                    if (segmentLocationArray[i] == segmentPanels[j].Location)
+                    {
+                        segmentReference[j].Text = (i + 1).ToString();
+                    }
+                }
+            }
+        }
+        
+        private void populateUI()
+        {
+            Segment test = new Segment();
+            for (int i = 23; i > 0; i--)
+            {
+                if (test.Equals(mySegmentArray[i]))
+                {
+                    //Skip
+                }
+                else
+                {
+                    for (int j = 1; j < i+1; j++)
+                    {
+                        clickToMakeLabel.Visible = false;
+                        aNewSegmentLabel.Visible = false;
+                        if (i == 23)
+                        {
+                            segmentPanels[j].Visible = true;
+                            addSegmentButtons[j].Visible = false;
+                        }
+                        else
+                        {
+                            segmentPanels[j].Visible = true;
+                            addSegmentButtons[j].Visible = false;
+                        }
+                        if (mySegmentArray[j].isImage == false && mySegmentArray[j].messageText == "")
+                        {
+                            segmentLabels[j].Text = "EMPTY";
+                        }
+                        else if (mySegmentArray[j].isImage)
+                        {
+                            segmentLabels[j].Text = "Image";
+                        }
+                        else
+                        {
+                            segmentLabels[j].Text = mySegmentArray[j].messageText;
+                        }
+                        //exit loop
+                    }
+                    if (i < 23)
+                    {
+                        addSegmentButtons[i + 1].Visible = true;
+                    }
+                    i = 0;
+                }
+            }
+            activeIndex = 0;
+            resetSegments();
+        }
+
+        private void abortDisplayThreads()
+        {
+            if (myDisplayThread != null)
+            {
+                if (myDisplayThread.IsAlive)
+                {
+                    myDisplayThread.Suspend();
+                    myDisplayThread.Resume();
+                    myDisplayThread.Abort();
+                }
+            }
+            if (myPauseInvalidationThread != null)
+            {
+                if (myPauseInvalidationThread.IsAlive)
+                {
+                    myPauseInvalidationThread.Abort();
+                }
+            }
+            marquee1.borderThreadAbort();
+            marquee1.clearMarquee(marquee1.BackColor);
+            marquee1.clearBorder(marquee1.BackColor);
+        }
+
+        private void UIForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            abortDisplayThreads();
+            Application.Exit();
+        }
+
+        //Added 12-3 Logan
+        private void marquee1_SizeChanged(object sender, EventArgs e)
+        {
+            marquee1.Height = (int)((double)marquee1.Width / 6);
+            marquee1.Top = (this.ClientSize.Height - marquee1.Height) / 2;
+        }
+
+        private void deleteSegment(int deleted)
+        {
+            segmentPanels[deleted].Visible = false;
+            for (int i = 0; i < 24; i++)
+            {
+                if (i > deleted)
+                {
+                    mySegmentArray[i - 1] = mySegmentArray[i];
+                    segmentPanels[i - 1] = segmentPanels[i];
+                    segmentReference[i - 1] = segmentReference[i];
+                    segmentLabels[i - 1] = segmentLabels[i];
+                    segmentButtons[i - 1] = segmentButtons[i];
+                    addSegmentButtons[i - 1] = addSegmentButtons[i];
+                    segmentPanels[i].Left = segmentLocationArray[i - 1].X;
+                    segmentPanels[i].Top = segmentLocationArray[i - 1].Y;
+                    addSegmentButtons[i].Left = addSegmentLocationArray[i - 1].X;
+                    addSegmentButtons[i].Top = addSegmentLocationArray[i - 1].Y;
+                }
+            }
+            //Fill arrays with a new object at the end of the Array
+            mySegmentArray[23] = new Segment();
+            SegmentHolderPanel.Controls.Add(segmentPanels[23]);
+            segmentLabels[23] = new System.Windows.Forms.Label();
+            segmentReference[23] = new System.Windows.Forms.Label();
+            segmentButtons[23] = new System.Windows.Forms.Button();
+            segmentPanels[23] = new System.Windows.Forms.Panel();
+            addSegmentButtons[23] = new System.Windows.Forms.Button();
+            SegmentHolderPanel.Controls.Add(segmentPanels[23]);
+            SegmentHolderPanel.Controls.Add(addSegmentButtons[23]);
+            createNewLabel(23);
+            createNewReference(23);
+            createNewCloseButtons(23);
+            createNewPanel(23, 928, 49);
+            createNewAddSegmentButton(23, 954, 59);
+            getLocations();
+        }
+
+        private void moveSegment(int movedFrom, int movedTo)
+        {
+            Segment tempSegment = mySegmentArray[movedFrom];
+            Panel tempPanel = segmentPanels[moveFrom];
+            Label tempLabel = segmentLabels[moveFrom];
+            Button tempButton = segmentButtons[moveFrom];
+            Label tempReference = segmentReference[movedFrom];
+
+            //If segment moved down
+            if (movedFrom - movedTo < 0)
+            {
+                for (int i = 0; i < 24; i++)
+                {
+                    if (i <= movedTo && i > movedFrom)
+                    {
+                        segmentPanels[i].Left = segmentLocationArray[i - 1].X;
+                        segmentPanels[i].Top = segmentLocationArray[i - 1].Y;
+                        mySegmentArray[i - 1] = mySegmentArray[i];
+                        segmentPanels[i - 1] = segmentPanels[i];
+                        segmentLabels[i - 1] = segmentLabels[i];
+                        segmentReference[i - 1] = segmentReference[i];
+                        segmentButtons[i - 1] = segmentButtons[i];
+                    }
+                }
+            }
+            //Else segment moved up
+            else
+            {
+                for (int i = 23; i >= 0; i--)
+                {
+                    if (i >= movedTo && i < movedFrom)
+                    {
+                        segmentPanels[i].Left = segmentLocationArray[i + 1].X;
+                        segmentPanels[i].Top = segmentLocationArray[i + 1].Y;
+                        mySegmentArray[i + 1] = mySegmentArray[i];
+                        segmentPanels[i + 1] = segmentPanels[i];
+                        segmentLabels[i + 1] = segmentLabels[i];
+                        segmentReference[i + 1] = segmentReference[i];
+                        segmentButtons[i + 1] = segmentButtons[i];
+                    }
+                }
+            }
+            mySegmentArray[movedTo] = tempSegment;
+            segmentPanels[movedTo] = tempPanel;
+            segmentLabels[movedTo] = tempLabel;
+            segmentReference[movedTo] = tempReference;
+            segmentButtons[movedTo] = tempButton;
+            segmentPanels[movedTo].Left = segmentLocationArray[movedTo].X;
+            segmentPanels[movedTo].Top = segmentLocationArray[movedTo].Y;
+            activeIndex = movedTo;
+            resetSegments();
+            getLocations();
+        }
+        #endregion
+
+        /*
+         *
+         *   UI Buttons
+         * 
+         */
+        #region UI Buttons
+        private void marqueeBackgroundColorButton_Click(object sender, EventArgs e)
+        {
+            if (marqueeBackgroundColorDialogBox.ShowDialog() == DialogResult.OK)
+            {
+                marqueeBackgroundColor = marqueeBackgroundColorDialogBox.Color;
+                marqueeBackgroundColorButton.BackColor = marqueeBackgroundColorDialogBox.Color;
+                originalPictureBox.BackColor = marqueeBackgroundColorDialogBox.Color;
+                scaledPictureBox.BackColor = marqueeBackgroundColorDialogBox.Color;
+            }
+        }
+        #endregion
+
+        /*
+         *
+         *   Mouse Events
+         * 
+         */
+        #region Mouse Events
         private void addSegmentClickEvent(object sender, EventArgs e)
         {
             clickToMakeLabel.Visible = false;
@@ -321,7 +647,7 @@ namespace Vision
             segmentLabels[i].MouseMove += new System.Windows.Forms.MouseEventHandler(mouseMoveEvent);
             segmentLabels[i].MouseUp += new System.Windows.Forms.MouseEventHandler(mouseUpEvent);
         }
-        
+
         private void createNewReference(int i)
         {
             // 
@@ -338,7 +664,7 @@ namespace Vision
             segmentReference[i].MouseMove += new System.Windows.Forms.MouseEventHandler(mouseMoveEvent);
             segmentReference[i].MouseUp += new System.Windows.Forms.MouseEventHandler(mouseUpEvent);
         }
-        
+
         private void createNewCloseButtons(int i)
         {
             // 
@@ -377,298 +703,6 @@ namespace Vision
             addSegmentButtons[i].Click += new System.EventHandler(addSegmentClickEvent);
             addSegmentButtons[i].BringToFront();
         }
-        
-        private void deleteSegment(int deleted)
-        {
-            segmentPanels[deleted].Visible = false;
-            for (int i = 0; i < 24; i++)
-            {
-                if (i > deleted)
-                {
-                    mySegmentArray[i - 1] = mySegmentArray[i];
-                    segmentPanels[i - 1] = segmentPanels[i];
-                    segmentReference[i - 1] = segmentReference[i];
-                    segmentLabels[i - 1] = segmentLabels[i];
-                    segmentButtons[i - 1] = segmentButtons[i];
-                    addSegmentButtons[i - 1] = addSegmentButtons[i];
-                    segmentPanels[i].Left = segmentLocationArray[i - 1].X;
-                    segmentPanels[i].Top = segmentLocationArray[i - 1].Y;
-                    addSegmentButtons[i].Left = addSegmentLocationArray[i - 1].X;
-                    addSegmentButtons[i].Top = addSegmentLocationArray[i - 1].Y;
-                }
-            }
-            //Fill arrays with a new object at the end of the Array
-            mySegmentArray[23] = new Segment();
-            SegmentHolderPanel.Controls.Add(segmentPanels[23]);
-            segmentLabels[23] = new System.Windows.Forms.Label();
-            segmentReference[23] = new System.Windows.Forms.Label();
-            segmentButtons[23] = new System.Windows.Forms.Button();
-            segmentPanels[23] = new System.Windows.Forms.Panel();
-            addSegmentButtons[23] = new System.Windows.Forms.Button();
-            SegmentHolderPanel.Controls.Add(segmentPanels[23]);
-            SegmentHolderPanel.Controls.Add(addSegmentButtons[23]);
-            createNewLabel(23);
-            createNewReference(23);
-            createNewCloseButtons(23);
-            createNewPanel(23, 928, 49);
-            createNewAddSegmentButton(23, 954, 59);
-            getLocations();
-        }
-
-        private void moveSegment(int movedFrom, int movedTo)
-        {
-            Segment tempSegment = mySegmentArray[movedFrom];
-            Panel tempPanel = segmentPanels[moveFrom];
-            Label tempLabel = segmentLabels[moveFrom];
-            Button tempButton = segmentButtons[moveFrom];
-            Label tempReference = segmentReference[movedFrom];
-
-            //If segment moved down
-            if (movedFrom - movedTo < 0)
-            {
-                for (int i = 0; i < 24; i++)
-                {
-                    if (i <= movedTo && i > movedFrom)
-                    {
-                        segmentPanels[i].Left = segmentLocationArray[i - 1].X;
-                        segmentPanels[i].Top = segmentLocationArray[i - 1].Y;
-                        mySegmentArray[i - 1] = mySegmentArray[i];
-                        segmentPanels[i - 1] = segmentPanels[i];
-                        segmentLabels[i - 1] = segmentLabels[i];
-                        segmentReference[i - 1] = segmentReference[i];
-                        segmentButtons[i - 1] = segmentButtons[i];
-                    }
-                }
-            }
-            //Else moved segment up
-            else
-            {
-                for (int i = 23; i >= 0; i--)
-                {
-                    if (i >= movedTo && i < movedFrom)
-                    {
-                        segmentPanels[i].Left = segmentLocationArray[i + 1].X;
-                        segmentPanels[i].Top = segmentLocationArray[i + 1].Y;
-                        mySegmentArray[i + 1] = mySegmentArray[i];
-                        segmentPanels[i + 1] = segmentPanels[i];
-                        segmentLabels[i + 1] = segmentLabels[i];
-                        segmentReference[i + 1] = segmentReference[i];
-                        segmentButtons[i + 1] = segmentButtons[i];
-                    }
-                }
-            }
-            mySegmentArray[movedTo] = tempSegment;
-            segmentPanels[movedTo] = tempPanel;
-            segmentLabels[movedTo] = tempLabel;
-            segmentReference[movedTo] = tempReference;
-            segmentButtons[movedTo] = tempButton;
-            segmentPanels[movedTo].Left = segmentLocationArray[movedTo].X;
-            segmentPanels[movedTo].Top = segmentLocationArray[movedTo].Y;
-            activeIndex = movedTo;
-            resetSegments();
-            getLocations();
-        }
-        
-        private void button1_Click_1(object sender, EventArgs e)
-        {
-            pauseButton.Visible = true;
-            abortDisplayThreads();
-            clearForMarquee();
-            backToMenuButton.Visible = true;
-            goToFullScreenButton.Visible = true;
-            this.FormBorderStyle = FormBorderStyle.Sizable;
-            this.MaximizeBox = true;
-            marquee1.Visible = true;
-            EnterFullScreenMode();
-            Segment mySegment = new Segment("DISCOVERY", Color.Red, 20000, 4, 4, 4, Color.Red, 4);
-            Segment mySecondSegment = new Segment("Discovery", Color.Aqua, true, 25, Color.Aqua, 3);
-            Segment myImageSegment = new Segment("..\\..\\panthers.jpg", 10000);
-            Segment myThirdSegment = new Segment("BEST TEAM", Color.Yellow, 4080, 4, 2, 4, Color.Green, 1);
-            mySegmentArray = new Segment[] { mySegment, mySecondSegment, myImageSegment, myThirdSegment };
-            Message myMessage = new Vision.Message(mySegmentArray, Color.Black);
-            myDisplayThread = new Thread(delegate () { marquee1.displayMessage(myMessage); });
-            myDisplayThread.Start();
-        }
-
-        /*
-         * 
-         *   Generic functions
-         * 
-         */
-        #region Generic Functions
-        //Sets the locations of objects to a parallel array
-
-        private void getLocations()
-        {
-            for (int i = 0; i < 24; i++)
-            {
-                if (i == 0)
-                {
-                    segmentLocationArray[i] = segmentPanels[i].Location;
-                }
-                else
-                {
-                    addSegmentLocationArray[i] = addSegmentButtons[i].Location;
-                    segmentLocationArray[i] = segmentPanels[i].Location;
-                }
-            }
-            setReferences();
-        }
-
-        private void clearForMarquee()
-        {
-            //If it starts from 0 it will continue to overwrite until no more segments are visible
-            for (int i = 0; i < 24; i++)
-            {
-                if (segmentPanels[i].Visible == true)
-                {
-                    lastSegmentVisable = i;
-                }
-            }
-            //Test which tab is active and then sets that tab to the front so the open menu is called the correct tab is displayed first
-            if (textPanel.Visible == true)
-            {
-                textPanel.BringToFront();
-            }
-            else
-            {
-                imagePanel.BringToFront();
-            }
-            //populateMarqueeButton.Visible = false; //REMOVE
-            SegmentHolderPanel.Visible = false;
-            startNewMessageButton.Visible = false;
-            loadXMLButton.Visible = false;
-            saveButton.Visible = false;
-            buildLabel.Visible = false;
-            textTabLabel.Visible = false;
-            imageTabLabel.Visible = false;
-            textPanel.Visible = false;
-            imagePanel.Visible = false;
-            marqueeBackgroundColorLabel.Visible = false;
-            marqueeBackgroundColorButton.Visible = false;
-            runButton.Visible = false;
-            marquee1.Top = (this.ClientSize.Height - marquee1.Height) / 2;
-        }
-
-
-        private void openMenu()
-        {
-            //populateMarqueeButton.Visible = true; //REMOVE
-            SegmentHolderPanel.Visible = true;
-            startNewMessageButton.Visible = true;
-            loadXMLButton.Visible = true;
-            saveButton.Visible = true;
-            textTabLabel.Visible = true;
-            imageTabLabel.Visible = true;
-            textPanel.Visible = true;
-            imagePanel.Visible = true;
-            marqueeBackgroundColorLabel.Visible = true;
-            marqueeBackgroundColorButton.Visible = true;
-            playButton.Visible = false;
-            pauseButton.Visible = false;
-            goToFullScreenButton.Visible = false;
-            marquee1.Visible = false;
-            this.BackColor = Color.FromArgb(255, 64, 64, 64);
-            runButton.Visible = true;
-            buildLabel.Visible = true;
-            resetSegments();
-            backToMenuButton.Visible = false;
-            this.MaximizeBox = false;
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;
-            this.WindowState = FormWindowState.Normal;
-            this.Size = new System.Drawing.Size(1034, 592);
-        }
-        private bool mouseIsOverPanel(Panel pnl)
-        {
-            if (pnl.ClientRectangle.Contains(pnl.PointToClient(Cursor.Position)))
-            {
-                return true;
-            }
-            return false;
-        }
-
-        private bool mouseIsOverButton(Button btn)
-        {
-            if (btn.ClientRectangle.Contains(btn.PointToClient(Cursor.Position)))
-            {
-                return true;
-            }
-            return false;
-        }
-
-        private bool mouseIsOverLabel(Label label)
-        {
-            if (label.ClientRectangle.Contains(label.PointToClient(Cursor.Position)))
-            {
-                return true;
-            }
-            return false;
-        }
-
-        private void setReferences()
-        {
-            for (int i = 0; i < 24; i++)
-            {
-                for (int j = 0; j < 24; j++)
-                {
-                    if (segmentLocationArray[i] == segmentPanels[j].Location)
-                    {
-                        segmentReference[j].Text = (i + 1).ToString();
-                    }
-                }
-            }
-        }
-        #endregion
-
-        /*
-         *
-         *   Animations
-         * 
-         */
-        #region Animations
-        public static class Util
-        {
-            public enum Effect { Roll, Slide, Center, Blend }
-
-            public static void Animate(Control ctl, Effect effect, int msec, int angle)
-            {
-                int flags = effmap[(int)effect];
-                if (ctl.Visible) { flags |= 0x10000; angle += 180; }
-                else
-                {
-                    if (ctl.TopLevelControl == ctl) flags |= 0x20000;
-                    else if (effect == Effect.Blend) throw new ArgumentException();
-                }
-                flags |= dirmap[(angle % 360) / 45];
-                bool ok = AnimateWindow(ctl.Handle, msec, flags);
-                if (!ok) throw new Exception("Animation failed");
-                ctl.Visible = !ctl.Visible;
-            }
-
-            private static int[] dirmap = { 1, 5, 4, 6, 2, 10, 8, 9 };
-            private static int[] effmap = { 0, 0x40000, 0x10, 0x80000 };
-
-            [DllImport("user32.dll")]
-            private static extern bool AnimateWindow(IntPtr handle, int msec, int flags);
-        }
-        #endregion
-
-        /*
-         *
-         *   UI Buttons
-         * 
-         */
-        #region UI Buttons
-        private void marqueeBackgroundColorButton_Click(object sender, EventArgs e)
-        {
-            if (marqueeBackgroundColorDialogBox.ShowDialog() == DialogResult.OK)
-            {
-                marqueeBackgroundColor = marqueeBackgroundColorDialogBox.Color;
-                marqueeBackgroundColorButton.BackColor = marqueeBackgroundColorDialogBox.Color;
-                originalPictureBox.BackColor = marqueeBackgroundColorDialogBox.Color;
-                scaledPictureBox.BackColor = marqueeBackgroundColorDialogBox.Color;
-            }
-        }
         #endregion
 
         /*
@@ -679,7 +713,6 @@ namespace Vision
         #region Segment Buttons
         private void resetSegments()
         {
-            
             //set everything to default
             for (int i = 0; i < 24; i++)
             {
@@ -736,6 +769,8 @@ namespace Vision
                 displayDurationLabel.Location = new Point(12, 28);
                 imagePanel.Controls.Add(displayDurationControl);
                 displayDurationControl.Location = new Point(102, 26);
+                displayDurationLabel.Visible = true;
+                displayDurationControl.Visible = true;
             }
             else
             {
@@ -1151,8 +1186,8 @@ namespace Vision
             if (specialEffectButton.Checked == true)
             {
                 mySegmentArray[activeIndex].isScrolling = false;
-                //For some reason setting the default value in designer doesnt work. But this fixes it.
                 displayDurationControl.Visible = true;
+                displayDurationControl.Value = mySegmentArray[activeIndex].segmentSpeed / 1000;
                 displayDurationLabel.Visible = true;
                 entranceEffectLabel.Visible = true;
                 entranceEffectComboBox.Visible = true;
@@ -1164,6 +1199,9 @@ namespace Vision
                 scrollSpeedLabel.Visible = false;
                 secondsPerCharacterLabel.Visible = false;
                 randomColorCheckBox.Visible = false;
+                setEntranceEffectText();
+                setMiddleEffectText();
+                setExitEffectText();
             }
         }
 
@@ -1172,7 +1210,6 @@ namespace Vision
             if (scrollingTextButton.Checked == true)
             {
                 mySegmentArray[activeIndex].isScrolling = true;
-                //For some reason setting the default value in designer doesnt work. But this fixes it.
                 scrollSpeedControl.Value = (decimal)((decimal)mySegmentArray[activeIndex].scrollSpeed / 100);
                 displayDurationControl.Visible = false;
                 displayDurationLabel.Visible = false;
@@ -1186,6 +1223,14 @@ namespace Vision
                 scrollSpeedLabel.Visible = true;
                 secondsPerCharacterLabel.Visible = true;
                 randomColorCheckBox.Visible = true;
+                if (mySegmentArray[activeIndex].isRandomColorScrolling)
+                {
+                    randomColorCheckBox.Checked = true;
+                }
+                else
+                {
+                    randomColorCheckBox.Checked = false;
+                }
             }
         }
 
@@ -1285,15 +1330,41 @@ namespace Vision
         {
             int size = -1;
 
-            if (openFileDialog1.ShowDialog() == DialogResult.OK) // Test result.
+            if (browseOpenFileDialog.ShowDialog() == DialogResult.OK)
             {
 
                 int segmentSpeed = mySegmentArray[activeIndex].segmentSpeed;
-                string filename = openFileDialog1.FileName;
+                string filename = browseOpenFileDialog.FileName;
                 fileLocationTextBox.Text = filename;
                 mySegmentArray[activeIndex].isImage = true;
                 mySegmentArray[activeIndex].filename = filename;
                 mySegmentArray[activeIndex].segmentSpeed = segmentSpeed;
+            }
+        }
+
+        private void previewButton_Click(object sender, EventArgs e)
+        {
+            originalPictureBox.Image = (Image)mySegmentArray[activeIndex].originalBitmap;
+            originalPictureBox.BackColor = marqueeBackgroundColor;
+            scaledPictureBox.Image = (Image)mySegmentArray[activeIndex].scaledBitmap;
+            scaledPictureBox.BackColor = marqueeBackgroundColor;
+            originalPictureBox.Invalidate();
+        }
+
+        public Bitmap setBitmap(string imageString)
+        {
+            byte[] bitmapBytes = Convert.FromBase64String(imageString);
+            MemoryStream memoryStream = new MemoryStream(bitmapBytes);
+            Image image = Image.FromStream(memoryStream);
+            Bitmap bitmap = new Bitmap(image);
+            return bitmap;
+        }
+
+        private void fileLocationTextBox_TextChanged(object sender, EventArgs e)
+        {
+            if (mySegmentArray[activeIndex].isImage == true)
+            {
+                segmentLabels[activeIndex].Text = "Image";
             }
         }
         #endregion
@@ -1395,13 +1466,16 @@ namespace Vision
             openMenu();
         }
 
+        //This is the Exit button
         private void saveAndExitButton_Click(object sender, EventArgs e)
         {
             //Closes the form
             Application.Exit();
             abortDisplayThreads();
         }
+
         //Edited 12-2 Heather
+        //This is the Run button
         private void saveAndRunButton_Click(object sender, EventArgs e)
         {
             pauseButton.Visible = true;
@@ -1419,6 +1493,126 @@ namespace Vision
             myDisplayThread = new Thread(delegate () { marquee1.displayMessage(myMessage); });
             myDisplayThread.Start();
         }
+
+        private void startNewMessageButton_Click(object sender, EventArgs e)
+        {
+            Application.Restart();
+        }
+
+        //This is the Save button
+        private void saveButton_Click_1(object sender, EventArgs e)
+        {
+            //create XML file
+            saveFileDialog.Filter = "Xml Files (*.xml) | *.xml";
+            saveFileDialog.FilterIndex = 1;
+            saveFileDialog.RestoreDirectory = true;
+
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                list = new List<Segment>();
+                Message copyMyMessage = new Vision.Message(mySegmentArray, marqueeBackgroundColor);
+                if (mySegmentArray != null)
+                {
+                    Segment[] copSegs = new Segment[copyMyMessage.getSegmentArray().Length];
+                    copyMyMessage.backgroundColor = marqueeBackgroundColor;
+
+                    for (int i = 0; i < copSegs.Length; i++)
+                    {
+                        Segment seg = new Segment();
+                        if (mySegmentArray[i].isImage)
+                        {
+                            seg.ignore = mySegmentArray[i].ignore;
+                            seg.isImage = mySegmentArray[i].isImage;
+                            seg.segmentSpeed = mySegmentArray[i].segmentSpeed;
+                            seg.originalBitmapString = mySegmentArray[i].originalBitmapString;
+                            seg.scaledBitmapString = mySegmentArray[i].scaledBitmapString;
+                            seg.imageAspect = mySegmentArray[i].imageAspect;
+                        }
+                        if (!mySegmentArray[i].isImage)
+                        {
+                            seg.ignore = mySegmentArray[i].ignore;
+                            seg.isImage = mySegmentArray[i].isImage;
+                            seg.segmentSpeed = mySegmentArray[i].segmentSpeed;
+                            seg.messageText = mySegmentArray[i].messageText;
+                            seg.onColor = mySegmentArray[i].onColor;
+                            seg.onColorR = mySegmentArray[i].onColorR;
+                            seg.onColorG = mySegmentArray[i].onColorG;
+                            seg.onColorB = mySegmentArray[i].onColorB;
+                            seg.isScrolling = mySegmentArray[i].isScrolling;
+                            seg.isRandomColorScrolling = mySegmentArray[i].isRandomColorScrolling;
+                            seg.scrollSpeed = mySegmentArray[i].scrollSpeed;
+                            seg.entranceEffect = mySegmentArray[i].entranceEffect;
+                            seg.middleEffect = mySegmentArray[i].middleEffect;
+                            seg.exitEffect = mySegmentArray[i].exitEffect;
+                            seg.borderColor = mySegmentArray[i].borderColor;
+                            seg.borderColorR = mySegmentArray[i].borderColorR;
+                            seg.borderColorG = mySegmentArray[i].borderColorG;
+                            seg.borderColorB = mySegmentArray[i].borderColorB;
+                            seg.borderEffect = mySegmentArray[i].borderEffect;
+                        }
+                        list.Add(seg);
+                    }
+                    XmlSave.SaveData(list, saveFileDialog.FileName);
+                }
+            }
+        }
+
+        //Edited 12-4 Heather
+        //This is the Load XML button
+        private void loadXMLButton_Click(object sender, EventArgs e)
+        {
+            xmlOpenFileDialog.Filter = "Xml Files (*.xml) | *.xml";
+            xmlOpenFileDialog.FilterIndex = 1;
+            xmlOpenFileDialog.RestoreDirectory = true;
+            if (xmlOpenFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                string fname = xmlOpenFileDialog.FileName;
+
+                XmlLoad<List<Segment>> cRef = new XmlLoad<List<Segment>>();
+                List<Segment> xmlFileSegs = new List<Segment>(cRef.LoadData(fname));
+                Segment[] deserializedXml = new Segment[xmlFileSegs.Count];
+                for (int i = 0; i < xmlFileSegs.Count; i++)
+                {
+                    Segment seg = new Segment();
+                    if (xmlFileSegs[i].isImage)
+                    {
+                        seg.ignore = xmlFileSegs[i].ignore;
+                        seg.isImage = xmlFileSegs[i].isImage;
+                        seg.segmentSpeed = xmlFileSegs[i].segmentSpeed;
+                        seg.originalBitmap = setBitmap(xmlFileSegs[i].originalBitmapString);
+                        seg.scaledBitmap = setBitmap(xmlFileSegs[i].scaledBitmapString);
+                        seg.originalBitmapString = xmlFileSegs[i].originalBitmapString;
+                        seg.scaledBitmapString = xmlFileSegs[i].scaledBitmapString;
+                        seg.imageAspect = xmlFileSegs[i].imageAspect;
+                    }
+                    if (!xmlFileSegs[i].isImage)
+                    {
+                        seg.ignore = xmlFileSegs[i].ignore;
+                        seg.isImage = xmlFileSegs[i].isImage;
+                        seg.segmentSpeed = xmlFileSegs[i].segmentSpeed;
+                        seg.messageText = xmlFileSegs[i].messageText;
+                        seg.onColor = Color.FromArgb(255, xmlFileSegs[i].onColorR, xmlFileSegs[i].onColorG, xmlFileSegs[i].onColorB);
+                        seg.onColorR = xmlFileSegs[i].onColorR;
+                        seg.onColorG = xmlFileSegs[i].onColorG;
+                        seg.onColorB = xmlFileSegs[i].onColorB;
+                        seg.isScrolling = xmlFileSegs[i].isScrolling;
+                        seg.isRandomColorScrolling = xmlFileSegs[i].isRandomColorScrolling;
+                        seg.scrollSpeed = xmlFileSegs[i].scrollSpeed;
+                        seg.entranceEffect = xmlFileSegs[i].entranceEffect;
+                        seg.middleEffect = xmlFileSegs[i].middleEffect;
+                        seg.exitEffect = xmlFileSegs[i].exitEffect;
+                        seg.borderColor = Color.FromArgb(255, xmlFileSegs[i].borderColorR, xmlFileSegs[i].borderColorG, xmlFileSegs[i].borderColorB);
+                        seg.borderColorR = xmlFileSegs[i].borderColorR;
+                        seg.borderColorG = xmlFileSegs[i].borderColorG;
+                        seg.borderColorB = xmlFileSegs[i].borderColorB;
+                        seg.borderEffect = xmlFileSegs[i].borderEffect;
+                    }
+                    deserializedXml[i] = seg;
+                }
+                mySegmentArray = deserializedXml;
+            }
+            populateUI();
+        }
         #endregion
 
         /*
@@ -1427,11 +1621,8 @@ namespace Vision
          * 
          */
         #region XML Methods
-
         //Edited 11-26 Heather
         //Edited 11-28 Logan
-        //Save all fields but "filename" and the "messageMatrix" in every segment object in array
-        //Also save the marqueeBackgroundColor from this class
         class XmlSave
         {
             public static void SaveData(object IClass, string fileName)
@@ -1550,126 +1741,6 @@ namespace Vision
         }
         #endregion
 
-        private void logoLabel_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void abortDisplayThreads()
-        {
-            if (myDisplayThread != null)
-            {
-                if (myDisplayThread.IsAlive)
-                {
-                    myDisplayThread.Suspend();
-                    myDisplayThread.Resume();
-                    myDisplayThread.Abort();
-                }
-            }
-            if (myPauseInvalidationThread != null)
-            {
-                if (myPauseInvalidationThread.IsAlive)
-                {
-                    myPauseInvalidationThread.Abort();
-                }
-            }
-            marquee1.borderThreadAbort();
-            marquee1.clearMarquee(marquee1.BackColor);
-            marquee1.clearBorder(marquee1.BackColor);
-        }
-
-        private void startNewMessageButton_Click(object sender, EventArgs e)
-        {
-            Application.Restart();
-        }
-
-        private void previewButton_Click(object sender, EventArgs e)
-        {
-            originalPictureBox.Image = (Image)mySegmentArray[activeIndex].originalBitmap;
-            originalPictureBox.BackColor = marqueeBackgroundColor;
-            scaledPictureBox.Image = (Image)mySegmentArray[activeIndex].scaledBitmap;
-            scaledPictureBox.BackColor = marqueeBackgroundColor;
-            originalPictureBox.Invalidate();
-        }
-
-        private void saveButton_Click_1(object sender, EventArgs e)
-        {
-            //create XML file
-            saveFileDialog1.Filter = "Xml Files (*.xml) | *.xml";
-            saveFileDialog1.FilterIndex = 1;
-            saveFileDialog1.RestoreDirectory = true;
-
-            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
-            {
-                list = new List<Segment>();
-                Message copyMyMessage = new Vision.Message(mySegmentArray, marqueeBackgroundColor);
-                if (mySegmentArray != null)
-                {
-                    Segment[] copSegs = new Segment[copyMyMessage.getSegmentArray().Length];
-                    copyMyMessage.backgroundColor = marqueeBackgroundColor;
-
-                    for (int i = 0; i < copSegs.Length; i++)
-                    {
-                        Segment seg = new Segment();
-                        if (mySegmentArray[i].isImage)
-                        {
-                            seg.ignore = mySegmentArray[i].ignore;
-                            seg.isImage = mySegmentArray[i].isImage;
-                            seg.filename = mySegmentArray[i].filename;
-                            seg.segmentSpeed = mySegmentArray[i].segmentSpeed;
-                            seg.originalBitmapString = mySegmentArray[i].originalBitmapString;
-                            seg.scaledBitmapString = mySegmentArray[i].scaledBitmapString;
-                            seg.imageAspect = mySegmentArray[i].imageAspect;
-                            seg.backgroundColor = marqueeBackgroundColor;
-                        }
-                        if (!mySegmentArray[i].isImage)
-                        {
-                            seg.ignore = mySegmentArray[i].ignore;
-                            seg.isImage = mySegmentArray[i].isImage;
-                            seg.segmentSpeed = mySegmentArray[i].segmentSpeed;
-                            seg.messageText = mySegmentArray[i].messageText;
-                            seg.onColor = mySegmentArray[i].onColor;
-                            seg.isScrolling = mySegmentArray[i].isScrolling;
-                            seg.isRandomColorScrolling = mySegmentArray[i].isRandomColorScrolling;
-                            seg.scrollSpeed = mySegmentArray[i].scrollSpeed;
-                            seg.entranceEffect = mySegmentArray[i].entranceEffect;
-                            seg.middleEffect = mySegmentArray[i].middleEffect;
-                            seg.exitEffect = mySegmentArray[i].exitEffect;
-                            seg.borderColor = mySegmentArray[i].borderColor;
-                            seg.borderEffect = mySegmentArray[i].borderEffect;
-                            seg.backgroundColor = copyMyMessage.backgroundColor;
-                        }
-                        list.Add(seg);
-                    }
-                    //Message updatedcopy = new Vision.Message(copSegs, marqueeBackgroundColor);
-                    XmlSave.SaveData(list, saveFileDialog1.FileName);
-                }
-                //myDisplayThread.Start();
-            }
-        }
-
-        public void setOriginalBitmap(string imageString)
-        {
-            byte[] bitmapBytes = Convert.FromBase64String(imageString);
-            MemoryStream memoryStream = new MemoryStream(bitmapBytes);
-            Image image = Image.FromStream(memoryStream);
-            Bitmap originalBitmap = new Bitmap(image);
-        }
-
-        public void setScaledBitmap(string imageString)
-        {
-            byte[] bitmapBytes = Convert.FromBase64String(imageString);
-            MemoryStream memoryStream = new MemoryStream(bitmapBytes);
-            Image image = Image.FromStream(memoryStream);
-            Bitmap scaledBitmap = new Bitmap(image);
-        }
-
-        private void UIForm_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            abortDisplayThreads();
-            Application.Exit();
-        }
-
         /*
          * 
          *   FullScreen methods
@@ -1677,7 +1748,6 @@ namespace Vision
          */
         #region FullScreen methods
 
-        //Work in progress
         //Edited 12-2 Heather
         private void EnterFullScreenMode()
         {
@@ -1692,7 +1762,6 @@ namespace Vision
             fullScreen = true;
         }
 
-        //Work in progress
         private void LeaveFullScreenMode()
         {
             exitFullScreen.Visible = false;
@@ -1718,29 +1787,10 @@ namespace Vision
         {
             EnterFullScreenMode();
             pauseCol = pauseButton.BackColor;
-            pauseButton.BackColor = Color.FromArgb(50, pauseCol.R, pauseCol.G, pauseCol.B);
+            pauseButton.BackColor = Color.FromArgb(140, pauseCol.R, pauseCol.G, pauseCol.B);
             playCol = playButton.BackColor;
-            playButton.BackColor = Color.FromArgb(50, playCol.R, playCol.G, playCol.B);
+            playButton.BackColor = Color.FromArgb(140, playCol.R, playCol.G, playCol.B);
         }
         #endregion
-
-        private void saveFileDialog1_FileOk(object sender, CancelEventArgs e)
-        {
-
-        }
-
-        private void fileLocationTextBox_TextChanged(object sender, EventArgs e)
-        {
-            if (mySegmentArray[activeIndex].isImage == true)
-            {
-                segmentLabels[activeIndex].Text = "Image";
-            }
-        }
-        //Added 12-3 Logan
-        private void marquee1_SizeChanged(object sender, EventArgs e)
-        {
-            marquee1.Height = (int)((double)marquee1.Width / 6);
-            marquee1.Top = (this.ClientSize.Height - marquee1.Height) / 2;
-        }               
     }
 }
