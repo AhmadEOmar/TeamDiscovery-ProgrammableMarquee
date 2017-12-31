@@ -274,5 +274,7 @@ At the top you can see that there are two tabs. Text and Image. Select the text 
  
 ![image](https://user-images.githubusercontent.com/31226496/33810051-f7d327f0-ddcd-11e7-97cc-6a566b8aca44.png)
 
-- When in FullScreen you can always return by pressing the X found in the top left.*/
+- When in FullScreen you can always return by pressing the X found in the top left.
+
+
 
