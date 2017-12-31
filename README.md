@@ -9,6 +9,10 @@ Built on .NET Framework 4.5.2
 
 Walk Through
 
+<a href="https://imgflip.com/gif/21wfwn"><img src="https://i.imgflip.com/21wfwn.gif" title="made at imgflip.com"/></a>
+
+
+
 -Splash Screen 
 
 ![splashscreen](https://user-images.githubusercontent.com/31226496/33809230-92c7b8b4-ddc1-11e7-8085-71dfb03e73dd.png)
@@ -43,13 +47,36 @@ At the top you can see that there are two tabs. Text and Image. Select the text 
 
 - 9 currently available entrance effects
   - No Effect cause your text to just show up with no effect.
-  - From top has your text slide in from the top.
+  - From top has your text slide in from the top, and from bottom makes the text come enter from the bottom of the screen.
+  		
+	<a href="https://imgflip.com/gif/21wg6y"><img src="https://i.imgflip.com/21wg6y.gif" title="made at imgflip.com"/></a>
+	
+	
+  - From left makes the left scroll in from the left, and from right makes it scroll in from the right to stop in the middle.
+  
+  	<a href="https://imgflip.com/gif/21wgrp"><img src="https://i.imgflip.com/21wgrp.gif" title="made at imgflip.com"/></a>
+	
+  
   - Horizontal Split brings the text in from left and right in two separate parts and then connects the parts.
+  
+  	<a href="https://imgflip.com/gif/21wgab"><img src="https://i.imgflip.com/21wgab.gif" title="made at imgflip.com"/></a>
+	
+  
   - Dissolve adds one dot at a time until all of the text is visible.
+  
+  	<a href="https://imgflip.com/gif/21wgd2"><img src="https://i.imgflip.com/21wgd2.gif" title="made at imgflip.com"/></a>
+	
+	
   - The Schwoop brings your text down from the top but upside down, then curves up right-side up and returns to the center.
+  
+  	<a href="https://imgflip.com/gif/21wggp"><img src="https://i.imgflip.com/21wggp.gif" title="made at imgflip.com"/></a>
+	
+  
   - Crooked From Top brings your text in from the top right slated, then centers itself and straightens the character.
-  
-  
+  	
+	<a href="https://imgflip.com/gif/21wgk7"><img src="https://i.imgflip.com/21wgk7.gif" title="made at imgflip.com"/></a>
+	
+  	
 
 -	Middle Effect manipulates the text while it is being displayed.
 
